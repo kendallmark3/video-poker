@@ -6,7 +6,6 @@ import { newGame, MAX_BET } from './game.js'
 
 export const SAVE_KEY = 'videopoker.save'
 const VERSION = 1
-const MAX_CREDITS = 1_000_000_000
 const HANDS = new Set(PAYTABLE.map((row) => row.key))
 
 const count = (n) => Number.isSafeInteger(n) && n >= 0
@@ -29,7 +28,7 @@ export function fromSave(raw) {
   }
   if (!isObject(data) || data.version !== VERSION) return null
   const { credits, bet, stats } = data
-  if (!count(credits) || credits > MAX_CREDITS) return null
+  if (!count(credits)) return null // any exact (safe) integer: the same range the game keeps
   if (!Number.isSafeInteger(bet) || bet < 1 || bet > MAX_BET) return null
   if (!isObject(stats)) return null
   const { handsPlayed, wagered, won, best, biggest } = stats

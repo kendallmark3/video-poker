@@ -38,7 +38,9 @@ export function returnPercent(stats) {
 
 export function setBet(state, bet) {
   if (state.phase !== 'ready') return state
-  return { ...state, bet: Math.min(MAX_BET, Math.max(1, bet)) }
+  // Bets are whole credits: ignore anything that is not a number, truncate fractions.
+  if (typeof bet !== 'number' || Number.isNaN(bet)) return state
+  return { ...state, bet: Math.min(MAX_BET, Math.max(1, Math.trunc(bet))) }
 }
 
 export function deal(state, rng = Math.random) {
@@ -95,7 +97,13 @@ export function startOver(state) {
 // The win is already in the credits (see draw), so starting a double takes it back out as the stake.
 
 export function canDouble(state) {
-  return state.phase === 'ready' && state.result?.win > 0 && !state.result.collected
+  return (
+    state.phase === 'ready' &&
+    state.result?.win > 0 &&
+    !state.result.collected &&
+    // A Double Up win adds the stake to the credits; keep credits an exact (safe) integer.
+    state.credits + state.result.win <= Number.MAX_SAFE_INTEGER
+  )
 }
 
 export function startDouble(state, rng = Math.random) {

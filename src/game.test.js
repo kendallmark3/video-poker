@@ -245,3 +245,13 @@ describe('session stats', () => {
     expect(restarted.stats).toEqual(stats)
   })
 })
+
+describe('double up: credits stay exact integers', () => {
+  it('is not offered when a win would push credits past the safe-integer limit', () => {
+    const atLimit = afterWin(10, Number.MAX_SAFE_INTEGER - 10)
+    expect(canDouble(atLimit)).toBe(true)
+    const overLimit = afterWin(10, Number.MAX_SAFE_INTEGER - 9)
+    expect(canDouble(overLimit)).toBe(false)
+    expect(startDouble(overLimit, rng)).toBe(overLimit)
+  })
+})
