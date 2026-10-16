@@ -25,9 +25,16 @@ body {
   margin: 0;
   min-height: 100vh;
   display: grid;
+  grid-template-columns: 1fr;
   place-items: center;
   padding: 24px 16px;
   background: radial-gradient(ellipse at top, var(--bg-2), var(--bg-1) 70%);
+}
+
+#root {
+  width: 100%;
+  display: flex;
+  justify-content: center;
 }
 
 .machine {
@@ -156,6 +163,7 @@ body {
 
 .card {
   position: relative;
+  container-type: inline-size;
   width: 100%;
   aspect-ratio: 5 / 7;
   border-radius: clamp(6px, 1.2vw, 12px);
@@ -227,27 +235,103 @@ body {
   position: absolute;
   font-weight: 800;
   line-height: 1;
-  font-size: clamp(13px, 2.6vw, 24px);
+  font-size: 14cqw;
   text-align: center;
 }
 
 .corner.top {
-  top: 7%;
-  left: 9%;
+  top: 6%;
+  left: 7%;
 }
 
 .corner.bottom {
-  bottom: 7%;
-  right: 9%;
+  bottom: 6%;
+  right: 7%;
   transform: rotate(180deg);
 }
 
-.pip {
+/* Number cards: standard pip layout inside the area between the corner indices. */
+.pips {
+  position: absolute;
+  inset: 15% 27%;
+}
+
+.pip-mark {
+  position: absolute;
+  transform: translate(-50%, -50%);
+  font-size: 17cqw;
+  line-height: 1;
+}
+
+.pip-mark.inverted {
+  transform: translate(-50%, -50%) rotate(180deg);
+}
+
+/* Aces: one large center pip. */
+.ace-pip {
   position: absolute;
   inset: 0;
   display: grid;
   place-items: center;
-  font-size: clamp(30px, 7vw, 64px);
+  font-size: 52cqw;
+}
+
+/* Court cards: a framed panel with rank, figure and suit. */
+.court {
+  position: absolute;
+  inset: 13% 24%;
+  display: grid;
+  grid-template-rows: auto 1fr auto;
+  place-items: center;
+  border: 2px solid var(--gold-deep);
+  border-radius: 6px;
+  background:
+    linear-gradient(180deg, rgba(255, 213, 74, 0.28), rgba(255, 213, 74, 0.08) 50%, rgba(255, 213, 74, 0.28)),
+    repeating-linear-gradient(45deg, rgba(0, 0, 0, 0.04) 0 4px, transparent 4px 8px);
+  box-shadow: inset 0 0 0 3px rgba(255, 255, 255, 0.7);
+  padding: 4% 0;
+}
+
+.court-rank {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-weight: 700;
+  font-size: 18cqw;
+  line-height: 1;
+}
+
+.court-figure {
+  font-size: 34cqw;
+  line-height: 1;
+}
+
+.court-suit {
+  font-size: 14cqw;
+  line-height: 1;
+}
+
+/* Keyboard hints */
+kbd {
+  font-family: ui-monospace, 'SF Mono', Menlo, monospace;
+  font-size: 0.72em;
+  font-weight: 700;
+  padding: 1px 6px;
+  border-radius: 4px;
+  border: 1px solid currentColor;
+  opacity: 0.75;
+  margin-left: 6px;
+  vertical-align: middle;
+}
+
+.key-hint {
+  margin: 0;
+  color: var(--muted);
+  border-color: #3a4785;
+}
+
+@media (hover: none) {
+  kbd {
+    display: none;
+  }
 }
 
 /* Meters */

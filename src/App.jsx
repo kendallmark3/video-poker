@@ -1,14 +1,39 @@
-import { useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { PAYTABLE, payout } from './poker.js'
 import { newGame, setBet, deal, toggleHold, draw, startOver, canStartOver, MAX_BET } from './game.js'
+import { SUIT_SYMBOL, rankLabel, cardName, isCourt, isRed, pipLayout } from './cards.js'
 
-const SUIT_SYMBOL = { S: '♠', H: '♥', D: '♦', C: '♣' }
-const SUIT_NAME = { S: 'Spades', H: 'Hearts', D: 'Diamonds', C: 'Clubs' }
-const RANK_LABEL = { 11: 'J', 12: 'Q', 13: 'K', 14: 'A' }
-const RANK_NAME = { 11: 'Jack', 12: 'Queen', 13: 'King', 14: 'Ace' }
+const COURT_FIGURE = { 11: '♞', 12: '♛', 13: '♚' }
 
-const label = (rank) => RANK_LABEL[rank] ?? String(rank)
-const cardName = (c) => `${RANK_NAME[c.rank] ?? c.rank} of ${SUIT_NAME[c.suit]}`
+const prefersReducedMotion = () =>
+  typeof window !== 'undefined' && window.matchMedia?.('(prefers-reduced-motion: reduce)').matches
+
+// Display-only count-up. Counts from the value currently shown; snaps when the value drops.
+function useCountUp(value) {
+  const [shown, setShown] = useState(value)
+  const shownRef = useRef(value)
+  useEffect(() => {
+    const start = shownRef.current
+    if (value <= start || prefersReducedMotion()) {
+      shownRef.current = value
+      setShown(value)
+      return
+    }
+    const duration = Math.min(1600, 300 + (value - start) * 10)
+    const t0 = performance.now()
+    let frame
+    const tick = (now) => {
+      const progress = Math.min(1, (now - t0) / duration)
+      const next = Math.round(start + (value - start) * progress)
+      shownRef.current = next
+      setShown(next)
+      if (progress < 1) frame = requestAnimationFrame(tick)
+    }
+    frame = requestAnimationFrame(tick)
+    return () => cancelAnimationFrame(frame)
+  }, [value])
+  return shown
+}
 
 function Paytable({ bet, winKey }) {
   return (
@@ -29,40 +54,69 @@ function Paytable({ bet, winKey }) {
   )
 }
 
-function Card({ card, held, canHold, onToggle, index, dealKey }) {
-  if (!card) {
+function CardCenter({ card }) {
+  const symbol = SUIT_SYMBOL[card.suit]
+  if (isCourt(card.rank)) {
     return (
-      <div className="slot">
-        <div className="held-badge hidden">HELD</div>
-        <div className="card back" aria-hidden="true" />
-      </div>
+      <span className="court" aria-hidden="true">
+        <span className="court-rank">{rankLabel(card.rank)}</span>
+        <span className="court-figure">{COURT_FIGURE[card.rank]}</span>
+        <span className="court-suit">{symbol}</span>
+      </span>
     )
   }
-  const red = card.suit === 'H' || card.suit === 'D'
+  if (card.rank === 14) {
+    return (
+      <span className="ace-pip" aria-hidden="true">
+        {symbol}
+      </span>
+    )
+  }
+  return (
+    <span className="pips" aria-hidden="true">
+      {pipLayout(card.rank).map(([x, y, inverted], i) => (
+        <span
+          key={i}
+          className={`pip-mark ${inverted ? 'inverted' : ''}`}
+          style={{ left: `${x}%`, top: `${y}%` }}
+        >
+          {symbol}
+        </span>
+      ))}
+    </span>
+  )
+}
+
+function Card({ card, held, canHold, onToggle, index, dealKey }) {
   return (
     <div className="slot">
-      <div className={`held-badge ${held ? '' : 'hidden'}`}>HELD</div>
-      <button
-        key={dealKey}
-        className={`card face ${red ? 'red' : 'black'} ${held ? 'held' : ''}`}
-        style={{ animationDelay: `${index * 70}ms` }}
-        onClick={onToggle}
-        disabled={!canHold}
-        aria-pressed={canHold ? held : undefined}
-        aria-label={`${cardName(card)}${held ? ', held' : ''}`}
-      >
-        <span className="corner top">
-          {label(card.rank)}
-          <br />
-          {SUIT_SYMBOL[card.suit]}
-        </span>
-        <span className="pip">{SUIT_SYMBOL[card.suit]}</span>
-        <span className="corner bottom">
-          {label(card.rank)}
-          <br />
-          {SUIT_SYMBOL[card.suit]}
-        </span>
-      </button>
+      <div className={`held-badge ${card && held ? '' : 'hidden'}`}>HELD</div>
+      {card ? (
+        <button
+          key={dealKey}
+          className={`card face ${isRed(card.suit) ? 'red' : 'black'} ${held ? 'held' : ''}`}
+          style={{ animationDelay: `${index * 70}ms` }}
+          onClick={onToggle}
+          disabled={!canHold}
+          aria-pressed={canHold ? held : undefined}
+          aria-label={`${cardName(card)}${held ? ', held' : ''}`}
+        >
+          <span className="corner top" aria-hidden="true">
+            {rankLabel(card.rank)}
+            <br />
+            {SUIT_SYMBOL[card.suit]}
+          </span>
+          <CardCenter card={card} />
+          <span className="corner bottom" aria-hidden="true">
+            {rankLabel(card.rank)}
+            <br />
+            {SUIT_SYMBOL[card.suit]}
+          </span>
+        </button>
+      ) : (
+        <div className="card back" aria-hidden="true" />
+      )}
+      <kbd className="key-hint">{index + 1}</kbd>
     </div>
   )
 }
@@ -83,24 +137,59 @@ function Message({ game }) {
 export default function App() {
   const [game, setGame] = useState(newGame)
   const [handNo, setHandNo] = useState(0)
+  const gameRef = useRef(game)
+  gameRef.current = game
+
   const holding = game.phase === 'holding'
-
-  // Always update from the latest state, so quick successive clicks are never lost.
-  const onDealDraw = () => {
-    if (holding) setGame((g) => draw(g))
-    else {
-      setGame((g) => deal(g))
-      setHandNo((n) => n + 1)
-    }
-  }
-  const onBetOne = () => setGame((g) => setBet(g, g.bet >= MAX_BET ? 1 : g.bet + 1))
-  const onBetMax = () => {
-    setGame((g) => deal(setBet(g, MAX_BET)))
-    setHandNo((n) => n + 1)
-  }
-
   const broke = canStartOver(game)
-  const lastWin = game.result?.win ?? 0
+
+  // Every action checks the latest state, so buttons and keys share the same guards
+  // and the hand number only changes when a deal actually happens.
+  const actions = {
+    dealDraw() {
+      const g = gameRef.current
+      if (g.phase === 'holding') setGame((s) => draw(s))
+      else if (canStartOver(g)) setGame((s) => startOver(s))
+      else {
+        setGame((s) => deal(s))
+        setHandNo((n) => n + 1)
+      }
+    },
+    betOne() {
+      if (gameRef.current.phase !== 'ready') return
+      setGame((s) => setBet(s, s.bet >= MAX_BET ? 1 : s.bet + 1))
+    },
+    betMax() {
+      const g = gameRef.current
+      if (g.phase !== 'ready' || canStartOver(g)) return
+      setGame((s) => deal(setBet(s, MAX_BET)))
+      setHandNo((n) => n + 1)
+    },
+    hold(i) {
+      setGame((s) => toggleHold(s, i))
+    },
+  }
+  const actionsRef = useRef(actions)
+  actionsRef.current = actions
+
+  useEffect(() => {
+    const onKey = (e) => {
+      if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return
+      const a = actionsRef.current
+      const key = e.key.toLowerCase()
+      if (key >= '1' && key <= '5') a.hold(Number(key) - 1)
+      else if (key === ' ' || key === 'enter') a.dealDraw()
+      else if (key === 'b') a.betOne()
+      else if (key === 'm') a.betMax()
+      else return
+      e.preventDefault()
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [])
+
+  const win = useCountUp(game.result?.win ?? 0)
+  const credits = useCountUp(game.credits)
 
   return (
     <main className="machine">
@@ -119,7 +208,7 @@ export default function App() {
             card={game.hand[i]}
             held={game.held[i]}
             canHold={holding}
-            onToggle={() => setGame((g) => toggleHold(g, i))}
+            onToggle={() => actions.hold(i)}
             dealKey={`${handNo}-${game.hand[i]?.rank}${game.hand[i]?.suit}`}
           />
         ))}
@@ -128,7 +217,7 @@ export default function App() {
       <section className="meters">
         <div className="meter">
           <span>Win</span>
-          <strong>{lastWin}</strong>
+          <strong data-testid="win">{win}</strong>
         </div>
         <div className="meter">
           <span>Bet</span>
@@ -136,25 +225,25 @@ export default function App() {
         </div>
         <div className="meter">
           <span>Credits</span>
-          <strong>{game.credits}</strong>
+          <strong data-testid="credits">{credits}</strong>
         </div>
       </section>
 
       <section className="controls">
         {broke ? (
-          <button className="btn primary" onClick={() => setGame((g) => startOver(g))}>
-            Start Over
+          <button className="btn primary" onClick={actions.dealDraw}>
+            Start Over <kbd>Space</kbd>
           </button>
         ) : (
           <>
-            <button className="btn" onClick={onBetOne} disabled={holding}>
-              Bet One
+            <button className="btn" onClick={actions.betOne} disabled={holding}>
+              Bet One <kbd>B</kbd>
             </button>
-            <button className="btn" onClick={onBetMax} disabled={holding}>
-              Bet Max
+            <button className="btn" onClick={actions.betMax} disabled={holding}>
+              Bet Max <kbd>M</kbd>
             </button>
-            <button className="btn primary" onClick={onDealDraw}>
-              {holding ? 'Draw' : 'Deal'}
+            <button className="btn primary" onClick={actions.dealDraw}>
+              {holding ? 'Draw' : 'Deal'} <kbd>Space</kbd>
             </button>
           </>
         )}

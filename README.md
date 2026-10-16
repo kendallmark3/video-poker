@@ -18,6 +18,15 @@ npm run build    # production build in dist/
 3. **Draw** replaces every card you didn't hold. Winning hands pay from the paytable, and the row lights up.
 4. You start with 100 play-money credits. When you run out, **Start Over** resets to 100.
 
+### Keyboard
+
+| Key | Action |
+|---|---|
+| `1`–`5` | Hold or release that card |
+| `Space` / `Enter` | Deal, Draw, or Start Over |
+| `B` | Bet One |
+| `M` | Bet Max (deals) |
+
 ## Rules (9/6 Jacks or Better)
 
 | Hand | Pays per credit |
