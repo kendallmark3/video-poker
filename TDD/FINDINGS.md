@@ -3,7 +3,13 @@
 Adversarial suite: `TDD/break-the-game.test.js` · Run: `npm run test:tdd` · Mutation check: `node TDD/mutate.mjs`
 Intent: [`intents/break-the-game.md`](../intents/break-the-game.md). No game code was changed in this round.
 
-## Result
+## Status: both findings fixed
+
+Fixed by [`intents/fix-break-findings.md`](../intents/fix-break-findings.md). `npm run test:tdd` now shows **34 passed / 0 failed**, with no assertion changed. The mutation check still catches 7/7, now from a baseline of 0 failing tests.
+- **Finding 1:** `setBet` ignores anything that isn't a number (including NaN) and truncates fractions.
+- **Finding 2:** the game and the save code now share one range, any exact (safe) integer. The save code's 1e9 cap is removed, and Double Up isn't offered when a win would leave that range.
+
+## Result at time of discovery
 
 ```
 npm run test:tdd

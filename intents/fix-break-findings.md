@@ -21,10 +21,10 @@ Fix the two defects found by the adversarial suite (`TDD/FINDINGS.md`) so that t
   - `game.js` `canDouble` returns false when `credits + stake` would exceed `Number.MAX_SAFE_INTEGER`, because a Double Up win adds the stake. This keeps credits exact.
 
 ## Success Criteria
-- [ ] The adversarial suite is green. Check: `npm run test:tdd` shows 34 passed, 0 failed, with no TDD assertion edited (`git diff TDD/break-the-game.test.js` is empty).
-- [ ] The new guard has its own regression test, seen failing first. Check: a new test in `src/game.test.js` asserts that `canDouble` is false when `credits + stake > Number.MAX_SAFE_INTEGER`, and true just at the limit.
-- [ ] Nothing regressed. Check: `npm test` passes all 100 earlier tests plus the new ones; `node TDD/mutate.mjs` still catches 7/7 against the new baseline of 0 failing; `npm run build` passes.
-- [ ] The live game still works. Check: build, redeploy to `carlas-video-poker-mkendall`, and play a hand on the S3 URL.
+- [x] The adversarial suite is green. Check: `npm run test:tdd` shows 34 passed, 0 failed, with no TDD assertion edited (`git diff TDD/break-the-game.test.js` is empty).
+- [x] The new guard has its own regression test, seen failing first. Check: a new test in `src/game.test.js` asserts that `canDouble` is false when `credits + stake > Number.MAX_SAFE_INTEGER`, and true just at the limit.
+- [x] Nothing regressed. Check: `npm test` passes all 100 earlier tests plus the new ones; `node TDD/mutate.mjs` still catches 7/7 against the new baseline of 0 failing; `npm run build` passes.
+- [x] The live game still works. Check: build, redeploy to `carlas-video-poker-mkendall`, and play a hand on the S3 URL.
 
 ## Constraints
 - Don't edit existing tests or TDD assertions. No new dependencies. No gameplay change for normal play.
@@ -44,6 +44,13 @@ Fix the two defects found by the adversarial suite (`TDD/FINDINGS.md`) so that t
 - **Unchanged:** `TDD/break-the-game.test.js`, `TDD/mutate.mjs`, and all existing tests.
 
 ## Evidence
+
+| Criterion | Check run | Result |
+|---|---|---|
+| Adversarial suite green, assertions untouched | `npm run test:tdd`; `git diff --stat TDD/` | **34 passed / 0 failed** (was 29 / 5). The diff of `TDD/` is empty. |
+| New guard has its own regression test, seen failing | `npx vitest run src/game.test.js` before the fix; `npm test` after | Before: 1 failed (Double Up still offered past the limit). After: passes. Double Up is offered at `MAX_SAFE_INTEGER − 10` with a 10 win, and refused at `− 9`. |
+| Nothing regressed | `npm test`; `node TDD/mutate.mjs`; `npm run build` | 101/101 tests pass (100 earlier + 1 new). Mutation check: baseline 0 failing, **7/7 caught**, `src/` restored clean. Build passes. |
+| Live game works | Redeploy to S3; headless Chrome on the live URL | The live page serves the new bundle `index-DOaZ2Z--.js`, the same as the build. Title, credit and floor names are present, and Bet Max → draw settles at 95 credits. |
 
 ## Stop
 Done when every success criterion is shown satisfied in Evidence.
