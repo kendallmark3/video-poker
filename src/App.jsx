@@ -145,6 +145,24 @@ function Card({ card, held, canHold, onToggle, index, dealKey, faceDown, topLabe
   )
 }
 
+function Logo() {
+  return (
+    <svg className="logo" viewBox="0 0 100 100" role="img" aria-label="Carl's Poker Game logo">
+      <circle cx="50" cy="50" r="48" fill="#c8102e" />
+      <circle cx="50" cy="50" r="41" fill="none" stroke="#fff" strokeWidth="9" strokeDasharray="13 9.4" />
+      <circle cx="50" cy="50" r="34" fill="#ffd54a" stroke="#7a5208" strokeWidth="2" />
+      <circle cx="50" cy="50" r="28" fill="#0e1a52" />
+      <path
+        d="M50 27 C 58 38, 70 44, 70 54 C 70 62, 62 66, 55 61 C 56 66, 58 70, 61 73 L 39 73 C 42 70, 44 66, 45 61 C 38 66, 30 62, 30 54 C 30 44, 42 38, 50 27 Z"
+        fill="#ffd54a"
+      />
+      <text x="50" y="58" textAnchor="middle" fontSize="15" fontWeight="900" fill="#0e1a52" fontFamily="Georgia, serif">
+        C
+      </text>
+    </svg>
+  )
+}
+
 function Stats({ stats, onReset }) {
   const pct = returnPercent(stats)
   const best = PAYTABLE.find((row) => row.key === stats.best)?.name ?? '—'
@@ -301,16 +319,29 @@ export default function App() {
 
   return (
     <main className="machine">
-      <button
-        className={`sound-toggle ${soundOn ? 'on' : ''}`}
-        onClick={actions.toggleSound}
-        aria-pressed={soundOn}
-      >
-        {soundOn ? '🔊 Sound on' : '🔇 Sound off'} <kbd>S</kbd>
-      </button>
-      <h1 className="title">Jacks or Better</h1>
-      <Paytable bet={game.bet} winKey={game.phase === 'ready' ? game.result?.key : null} />
+      <header className="header">
+        <div className="brand">
+          <Logo />
+          <div>
+            <h1 className="title">Carl's Poker Game</h1>
+            <p className="subtitle">Jacks or Better</p>
+          </div>
+        </div>
+        <button
+          className={`sound-toggle ${soundOn ? 'on' : ''}`}
+          onClick={actions.toggleSound}
+          aria-pressed={soundOn}
+        >
+          {soundOn ? '🔊 Sound on' : '🔇 Sound off'} <kbd>S</kbd>
+        </button>
+      </header>
 
+      <div className="machine-body">
+      <div className="area-pay">
+        <Paytable bet={game.bet} winKey={game.phase === 'ready' ? game.result?.key : null} />
+      </div>
+
+      <div className="play">
       <div className="message" role="status" aria-live="polite">
         <Message game={game} />
       </div>
@@ -400,8 +431,12 @@ export default function App() {
           </>
         )}
       </section>
+      </div>
 
-      <Stats stats={game.stats} onReset={actions.resetSession} />
+      <div className="area-stats">
+        <Stats stats={game.stats} onReset={actions.resetSession} />
+      </div>
+      </div>
     </main>
   )
 }

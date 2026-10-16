@@ -1,6 +1,6 @@
-# Jacks or Better Video Poker
+# Carl's Poker Game
 
-A browser video poker machine built with React, driven by the intent files in [intents/](intents/).
+A Jacks or Better video poker machine for the browser built with React, driven by the intent files in [intents/](intents/).
 
 ## Run
 
