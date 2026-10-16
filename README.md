@@ -28,6 +28,7 @@ npm run build    # production build in dist/
 | `M` | Bet Max (deals) |
 | `D` / `C` | Double Up / Collect (after a win) |
 | `1`–`4` | Pick a card during Double Up |
+| `S` | Sound on / off (starts off) |
 
 ### Double Up
 
@@ -39,6 +40,11 @@ After any win you can **Double Up** or **Collect**.
    - **Equal:** the stake is returned (push).
    - **Lower:** the stake is lost.
 3. **Keep going or stop:** after a win or a push you can double again, collect, or just deal the next hand. Collecting or dealing keeps what you've won.
+
+### Sound and stats
+
+- **Sound:** effects are synthesized in the browser (Web Audio), with no audio files. Sound starts off; press `S` or the Sound button to turn it on.
+- **Stats:** the panel under the machine shows hands played, credits wagered and won, your return percentage, your best hand, and your biggest win. Double Up results count toward credits won. Start Over keeps the session stats.
 
 ## Rules (9/6 Jacks or Better)
 

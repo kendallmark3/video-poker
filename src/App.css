@@ -498,3 +498,84 @@ kbd {
     animation: none;
   }
 }
+
+/* Sound toggle */
+.machine {
+  position: relative;
+}
+
+.sound-toggle {
+  position: absolute;
+  top: 14px;
+  right: 16px;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 800;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: #050817;
+  border: 2px solid #26336f;
+  border-radius: 999px;
+  padding: 6px 12px;
+  cursor: pointer;
+}
+
+.sound-toggle.on {
+  color: var(--win);
+  border-color: #1f9c58;
+}
+
+.sound-toggle:focus-visible {
+  outline: 3px solid #7fd3ff;
+  outline-offset: 3px;
+}
+
+/* Session stats */
+.stats {
+  display: grid;
+  grid-template-columns: repeat(6, 1fr);
+  gap: 8px;
+  margin: 18px 0 0;
+  padding: 10px 12px;
+  background: rgba(5, 8, 23, 0.6);
+  border: 1px solid #26336f;
+  border-radius: 10px;
+}
+
+.stats div {
+  text-align: center;
+  min-width: 0;
+}
+
+.stats dt {
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
+.stats dd {
+  margin: 2px 0 0;
+  font-weight: 800;
+  font-size: 15px;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+@media (max-width: 640px) {
+  .stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (max-width: 900px) {
+  .sound-toggle {
+    position: static;
+    display: block;
+    margin: 0 0 8px auto;
+  }
+}

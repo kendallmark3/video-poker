@@ -196,3 +196,52 @@ describe('double up: normal play is blocked', () => {
     expect(startOver(s)).toBe(s)
   })
 })
+
+import { returnPercent } from './game.js'
+
+describe('session stats', () => {
+  it('starts empty, with no return percentage before the first wager', () => {
+    const { stats } = newGame()
+    expect(stats).toEqual({ handsPlayed: 0, wagered: 0, won: 0, best: null, biggest: 0 })
+    expect(returnPercent(stats)).toBeNull()
+  })
+
+  it('counts hands and wagers on deal, and winnings on draw', () => {
+    let s = deal(setBet(newGame(), 5), rng)
+    expect(s.stats.handsPlayed).toBe(1)
+    expect(s.stats.wagered).toBe(5)
+    s = draw([0, 1, 2, 3, 4].reduce(toggleHold, s))
+    expect(s.stats.won).toBe(s.result.win)
+    expect(returnPercent(s.stats)).toBe((s.result.win / 5) * 100)
+  })
+
+  it('keeps the best hand and the biggest payout', () => {
+    const base = { ...newGame(), phase: 'holding', bet: 5, deck: [], held: [true, true, true, true, true] }
+    const hand = (cards) => cards.map(([rank, suit]) => ({ rank, suit }))
+    const fullHouse = draw({ ...base, hand: hand([[3, 'C'], [3, 'D'], [3, 'H'], [9, 'S'], [9, 'C']]) })
+    expect(fullHouse.stats.best).toBe('fullHouse')
+    expect(fullHouse.stats.biggest).toBe(45)
+    const pair = draw({ ...base, stats: fullHouse.stats, hand: hand([[11, 'C'], [11, 'D'], [3, 'H'], [7, 'S'], [9, 'C']]) })
+    expect(pair.stats.best).toBe('fullHouse')
+    expect(pair.stats.biggest).toBe(45)
+    expect(pair.stats.won).toBe(50)
+  })
+
+  it('adjusts winnings by the Double Up result', () => {
+    const start = { ...afterWin(10, 105), stats: { handsPlayed: 1, wagered: 5, won: 10, best: 'twoPair', biggest: 10 } }
+    const doubled = startDouble(start, rng)
+    const fixed = (dealer, choice) => ({ ...doubled, double: { ...doubled.double, dealer: card(dealer, 'H'), choices: [card(choice, 'C'), card(2), card(3), card(4)] } })
+    const won = pickDouble(fixed(9, 12), 0)
+    expect(won.stats.won).toBe(20)
+    expect(won.stats.biggest).toBe(20)
+    expect(pickDouble(fixed(9, 9), 0).stats.won).toBe(10)
+    expect(pickDouble(fixed(9, 2), 0).stats.won).toBe(0)
+  })
+
+  it('keeps the session stats through Start Over', () => {
+    const stats = { handsPlayed: 30, wagered: 100, won: 0, best: null, biggest: 0 }
+    const restarted = startOver({ ...newGame(), credits: 0, stats })
+    expect(restarted.credits).toBe(100)
+    expect(restarted.stats).toEqual(stats)
+  })
+})

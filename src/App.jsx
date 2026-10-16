@@ -2,8 +2,9 @@ import { useEffect, useRef, useState } from 'react'
 import { PAYTABLE, payout } from './poker.js'
 import {
   newGame, setBet, deal, toggleHold, draw, startOver, canStartOver, MAX_BET,
-  canDouble, startDouble, pickDouble, collect,
+  canDouble, startDouble, pickDouble, collect, returnPercent,
 } from './game.js'
+import { createSound } from './sound.js'
 import { SUIT_SYMBOL, rankLabel, cardName, isCourt, isRed, pipLayout } from './cards.js'
 
 const COURT_FIGURE = { 11: '♞', 12: '♛', 13: '♚' }
@@ -134,6 +135,29 @@ function Card({ card, held, canHold, onToggle, index, dealKey, faceDown, topLabe
   )
 }
 
+function Stats({ stats }) {
+  const pct = returnPercent(stats)
+  const best = PAYTABLE.find((row) => row.key === stats.best)?.name ?? '—'
+  const items = [
+    ['Hands', stats.handsPlayed],
+    ['Wagered', stats.wagered],
+    ['Won', stats.won],
+    ['Return', pct === null ? '—' : `${pct.toFixed(1)}%`],
+    ['Best hand', best],
+    ['Biggest win', stats.biggest],
+  ]
+  return (
+    <dl className="stats" aria-label="Session stats">
+      {items.map(([label, value]) => (
+        <div key={label}>
+          <dt>{label}</dt>
+          <dd>{value}</dd>
+        </div>
+      ))}
+    </dl>
+  )
+}
+
 function Message({ game }) {
   if (game.phase === 'double') return <span>Pick a card higher than the dealer — 1 to 4</span>
   if (game.result?.double === 'win')
@@ -159,6 +183,25 @@ export default function App() {
   const [handNo, setHandNo] = useState(0)
   const gameRef = useRef(game)
   gameRef.current = game
+
+  // One sound engine for the app's lifetime (safe under StrictMode's double mount).
+  const soundRef = useRef(null)
+  if (!soundRef.current) soundRef.current = createSound()
+  const [soundOn, setSoundOn] = useState(false)
+
+  // Sounds follow state changes, so the pure game logic and actions stay sound-free.
+  const prevRef = useRef(game)
+  useEffect(() => {
+    const prev = prevRef.current
+    prevRef.current = game
+    if (prev === game) return
+    const play = soundRef.current.play
+    if (game.phase === 'holding' && prev.phase !== 'holding') play('deal')
+    else if (game.phase === 'holding') play('hold')
+    else if (prev.phase === 'holding' && game.phase === 'ready') play(game.result.win > 0 ? 'win' : 'lose')
+    else if (game.phase === 'double' && prev.phase !== 'double') play('double')
+    else if (prev.phase === 'double' && game.phase === 'ready') play(game.result.double)
+  }, [game])
 
   const holding = game.phase === 'holding'
   const broke = canStartOver(game)
@@ -198,6 +241,12 @@ export default function App() {
     pick(i) {
       setGame((s) => pickDouble(s, i))
     },
+    toggleSound() {
+      const sound = soundRef.current
+      sound.setEnabled(!sound.enabled) // runs inside the click or key press, as browsers require
+      setSoundOn(sound.enabled)
+      sound.play('hold')
+    },
   }
   const actionsRef = useRef(actions)
   actionsRef.current = actions
@@ -212,6 +261,7 @@ export default function App() {
       else if (!inDouble && key >= '1' && key <= '5') a.hold(Number(key) - 1)
       else if (key === 'd') a.double()
       else if (key === 'c') a.collect()
+      else if (key === 's') a.toggleSound()
       else if (key === ' ' || key === 'enter') a.dealDraw()
       else if (key === 'b') a.betOne()
       else if (key === 'm') a.betMax()
@@ -229,6 +279,13 @@ export default function App() {
 
   return (
     <main className="machine">
+      <button
+        className={`sound-toggle ${soundOn ? 'on' : ''}`}
+        onClick={actions.toggleSound}
+        aria-pressed={soundOn}
+      >
+        {soundOn ? '🔊 Sound on' : '🔇 Sound off'} <kbd>S</kbd>
+      </button>
       <h1 className="title">Jacks or Better</h1>
       <Paytable bet={game.bet} winKey={game.phase === 'ready' ? game.result?.key : null} />
 
@@ -321,6 +378,8 @@ export default function App() {
           </>
         )}
       </section>
+
+      <Stats stats={game.stats} />
     </main>
   )
 }

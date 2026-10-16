@@ -1,4 +1,4 @@
-import { createDeck, shuffle, evaluate, payout } from './poker.js'
+import { createDeck, shuffle, evaluate, payout, PAYTABLE } from './poker.js'
 
 export const STARTING_CREDITS = 100
 export const MAX_BET = 5
@@ -16,7 +16,24 @@ export function newGame() {
     held: [false, false, false, false, false],
     result: null, // { key, name, win } after a draw
     double: null, // { stake, dealer, choices, pick, outcome } during and after Double Up
+    stats: { handsPlayed: 0, wagered: 0, won: 0, best: null, biggest: 0 },
   }
+}
+
+// PAYTABLE is ordered best-first, so a lower index is a better hand.
+const rank = (key) => (key ? PAYTABLE.findIndex((row) => row.key === key) : Infinity)
+
+function recordWin(stats, key, win) {
+  return {
+    ...stats,
+    won: stats.won + win,
+    best: rank(key) < rank(stats.best) ? key : stats.best,
+    biggest: Math.max(stats.biggest, win),
+  }
+}
+
+export function returnPercent(stats) {
+  return stats.wagered > 0 ? (stats.won / stats.wagered) * 100 : null
 }
 
 export function setBet(state, bet) {
@@ -38,6 +55,7 @@ export function deal(state, rng = Math.random) {
     held: [false, false, false, false, false],
     result: null,
     double: null,
+    stats: { ...state.stats, handsPlayed: state.stats.handsPlayed + 1, wagered: state.stats.wagered + bet },
   }
 }
 
@@ -60,6 +78,7 @@ export function draw(state) {
     phase: 'ready',
     credits: state.credits + win,
     result: { key: paying?.key ?? null, name: paying?.name ?? null, win },
+    stats: recordWin(state.stats, paying?.key ?? null, win),
   }
 }
 
@@ -68,7 +87,7 @@ export function canStartOver(state) {
 }
 
 export function startOver(state) {
-  return canStartOver(state) ? newGame() : state
+  return canStartOver(state) ? { ...newGame(), stats: state.stats } : state
 }
 
 
@@ -104,6 +123,7 @@ export function pickDouble(state, index) {
     credits: state.credits + win,
     result: { key: null, name, win, double: outcome },
     double: { ...d, pick: index, outcome },
+    stats: { ...state.stats, won: state.stats.won + win - d.stake, biggest: Math.max(state.stats.biggest, win) },
   }
 }
 
