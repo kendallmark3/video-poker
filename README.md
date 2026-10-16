@@ -46,6 +46,13 @@ After any win you can **Double Up** or **Collect**.
 - **Sound:** effects are synthesized in the browser (Web Audio), with no audio files. Sound starts off; press `S` or the Sound button to turn it on.
 - **Stats:** the panel under the machine shows hands played, credits wagered and won, your return percentage, your best hand, and your biggest win. Double Up results count toward credits won. Start Over keeps the session stats.
 
+### Saving and reset
+
+- **Saved automatically:** credits, bet and session stats are kept in your browser (`localStorage`) and come back when you reload. Saved data is checked on load, and anything invalid starts a fresh game.
+- **Reloading mid-hand or mid-Double Up:** the bet or stake already taken stays taken, as if you walked away from a real machine. The machine comes back ready to deal.
+- **Reset Session:** the button under the stats sets credits back to 100 and clears the stats, after you confirm.
+- **Phones:** the game works on phones. Tap cards to hold them; every control is a full-size touch target.
+
 ## Rules (9/6 Jacks or Better)
 
 | Hand | Pays per credit |
@@ -68,4 +75,4 @@ Payouts include the bet, so a pair of jacks or better gets your bet back.
 - Aces count high or low in straights (10-J-Q-K-A and A-2-3-4-5). Straights don't wrap (Q-K-A-2-3 isn't a straight).
 - The bet is taken when the hand is dealt and can't change until the draw. If the bet is more than your credits, the game bets what you have left.
 - **Bet Max** deals immediately, as on a real machine.
-- Credits are play money only. They reset when the page reloads.
+- Credits are play money only. They're saved in your browser, not on a server.

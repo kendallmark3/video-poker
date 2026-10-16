@@ -5,6 +5,16 @@ import {
   canDouble, startDouble, pickDouble, collect, returnPercent,
 } from './game.js'
 import { createSound } from './sound.js'
+import { loadGame, saveGame } from './storage.js'
+
+// localStorage itself can throw (blocked cookies, some private modes).
+const storage = (() => {
+  try {
+    return window.localStorage
+  } catch {
+    return null
+  }
+})()
 import { SUIT_SYMBOL, rankLabel, cardName, isCourt, isRed, pipLayout } from './cards.js'
 
 const COURT_FIGURE = { 11: '♞', 12: '♛', 13: '♚' }
@@ -135,7 +145,7 @@ function Card({ card, held, canHold, onToggle, index, dealKey, faceDown, topLabe
   )
 }
 
-function Stats({ stats }) {
+function Stats({ stats, onReset }) {
   const pct = returnPercent(stats)
   const best = PAYTABLE.find((row) => row.key === stats.best)?.name ?? '—'
   const items = [
@@ -147,14 +157,19 @@ function Stats({ stats }) {
     ['Biggest win', stats.biggest],
   ]
   return (
-    <dl className="stats" aria-label="Session stats">
-      {items.map(([label, value]) => (
-        <div key={label}>
-          <dt>{label}</dt>
-          <dd>{value}</dd>
-        </div>
-      ))}
-    </dl>
+    <div className="stats-wrap">
+      <dl className="stats" aria-label="Session stats">
+        {items.map(([label, value]) => (
+          <div key={label}>
+            <dt>{label}</dt>
+            <dd>{value}</dd>
+          </div>
+        ))}
+      </dl>
+      <button className="reset-btn" onClick={onReset}>
+        Reset Session
+      </button>
+    </div>
   )
 }
 
@@ -166,7 +181,7 @@ function Message({ game }) {
     return <span className="win">Push — {game.result.win} kept</span>
   if (game.result?.double === 'lose') return <span className="lose">Double Up lost</span>
   if (canStartOver(game)) return <span className="lose">Out of credits</span>
-  if (game.phase === 'holding') return <span>Click cards to hold, then Draw</span>
+  if (game.phase === 'holding') return <span>Hold the cards you want, then Draw</span>
   if (game.result?.win > 0)
     return (
       <span className="win">
@@ -179,7 +194,7 @@ function Message({ game }) {
 }
 
 export default function App() {
-  const [game, setGame] = useState(newGame)
+  const [game, setGame] = useState(() => loadGame(storage))
   const [handNo, setHandNo] = useState(0)
   const gameRef = useRef(game)
   gameRef.current = game
@@ -198,10 +213,13 @@ export default function App() {
     const play = soundRef.current.play
     if (game.phase === 'holding' && prev.phase !== 'holding') play('deal')
     else if (game.phase === 'holding') play('hold')
-    else if (prev.phase === 'holding' && game.phase === 'ready') play(game.result.win > 0 ? 'win' : 'lose')
+    // A reset mid-hand or mid-double leaves `result` null: no sound, and no crash.
+    else if (prev.phase === 'holding' && game.phase === 'ready' && game.result) play(game.result.win > 0 ? 'win' : 'lose')
     else if (game.phase === 'double' && prev.phase !== 'double') play('double')
-    else if (prev.phase === 'double' && game.phase === 'ready') play(game.result.double)
+    else if (prev.phase === 'double' && game.phase === 'ready' && game.result) play(game.result.double)
   }, [game])
+
+  useEffect(() => saveGame(storage, game), [game])
 
   const holding = game.phase === 'holding'
   const broke = canStartOver(game)
@@ -240,6 +258,10 @@ export default function App() {
     },
     pick(i) {
       setGame((s) => pickDouble(s, i))
+    },
+    resetSession() {
+      if (!window.confirm('Reset your session? Credits go back to 100 and stats are cleared.')) return
+      setGame(newGame())
     },
     toggleSound() {
       const sound = soundRef.current
@@ -379,7 +401,7 @@ export default function App() {
         )}
       </section>
 
-      <Stats stats={game.stats} />
+      <Stats stats={game.stats} onReset={actions.resetSession} />
     </main>
   )
 }

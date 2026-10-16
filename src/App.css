@@ -579,3 +579,54 @@ kbd {
     margin: 0 0 8px auto;
   }
 }
+
+/* Reset Session */
+.stats-wrap {
+  margin-top: 18px;
+}
+
+.stats-wrap .stats {
+  margin-top: 0;
+}
+
+.reset-btn {
+  display: block;
+  margin: 10px auto 0;
+  font: inherit;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--muted);
+  background: transparent;
+  border: 1px solid #3a4785;
+  border-radius: 8px;
+  padding: 6px 14px;
+  cursor: pointer;
+}
+
+.reset-btn:hover {
+  color: var(--text);
+  border-color: var(--muted);
+}
+
+.reset-btn:focus-visible {
+  outline: 3px solid #7fd3ff;
+  outline-offset: 3px;
+}
+
+/* Phone: every touch target at least 44px */
+@media (max-width: 520px) {
+  .btn,
+  .btn.primary {
+    min-width: 0;
+    min-height: 48px;
+  }
+  .sound-toggle,
+  .reset-btn {
+    min-height: 44px;
+  }
+  .title {
+    margin-bottom: 10px;
+  }
+}
