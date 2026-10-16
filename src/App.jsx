@@ -6,6 +6,8 @@ import {
 } from './game.js'
 import { createSound } from './sound.js'
 import { loadGame, saveGame } from './storage.js'
+import { celebration } from './celebrate.js'
+import { CasinoBackdrop, CoinShower } from './Casino.jsx'
 
 // localStorage itself can throw (blocked cookies, some private modes).
 const storage = (() => {
@@ -221,6 +223,7 @@ export default function App() {
   const soundRef = useRef(null)
   if (!soundRef.current) soundRef.current = createSound()
   const [soundOn, setSoundOn] = useState(false)
+  const [burst, setBurst] = useState(null) // { id, level } while coins are falling
 
   // Sounds follow state changes, so the pure game logic and actions stay sound-free.
   const prevRef = useRef(game)
@@ -235,6 +238,13 @@ export default function App() {
     else if (prev.phase === 'holding' && game.phase === 'ready' && game.result) play(game.result.win > 0 ? 'win' : 'lose')
     else if (game.phase === 'double' && prev.phase !== 'double') play('double')
     else if (prev.phase === 'double' && game.phase === 'ready' && game.result) play(game.result.double)
+
+    // Celebrate when a draw or a Double Up pick settles into a win.
+    const settled = (prev.phase === 'holding' || prev.phase === 'double') && game.phase === 'ready' && game.result
+    if (settled && !prefersReducedMotion()) {
+      const level = celebration(game.result, game.bet)
+      if (level > 0) setBurst((b) => ({ id: (b?.id ?? 0) + 1, level }))
+    }
   }, [game])
 
   useEffect(() => saveGame(storage, game), [game])
@@ -318,6 +328,9 @@ export default function App() {
   const credits = useCountUp(game.credits)
 
   return (
+    <>
+    <CasinoBackdrop />
+    {burst && <CoinShower key={burst.id} level={burst.level} onDone={() => setBurst(null)} />}
     <main className="machine">
       <header className="header">
         <div className="brand">
@@ -438,5 +451,6 @@ export default function App() {
       </div>
       </div>
     </main>
+    </>
   )
 }

@@ -736,3 +736,189 @@ kbd {
     letter-spacing: 0.24em;
   }
 }
+
+/* ---------- Round 7: casino atmosphere ---------- */
+
+/* Casino carpet (html gets the base colour so long pages never show white) */
+html {
+  background: #12030f;
+}
+
+body {
+  background:
+    radial-gradient(circle at 50% 50%, rgba(255, 213, 74, 0.22) 0 3px, transparent 4px) 0 0 / 38px 38px,
+    radial-gradient(circle at 50% 50%, rgba(63, 224, 208, 0.16) 0 7px, transparent 8px) 19px 19px / 38px 38px,
+    repeating-linear-gradient(45deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 19px),
+    repeating-linear-gradient(-45deg, rgba(255, 255, 255, 0.035) 0 2px, transparent 2px 19px),
+    radial-gradient(ellipse at 50% 0%, #6a1238, #2a0620 55%, #12030f);
+  background-attachment: fixed;
+}
+
+.casino-bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.chandelier {
+  position: absolute;
+  left: 50%;
+  top: -18vh;
+  width: 90vw;
+  height: 60vh;
+  transform: translateX(-50%);
+  background: radial-gradient(ellipse at center, rgba(255, 213, 74, 0.35), rgba(255, 150, 60, 0.12) 40%, transparent 70%);
+  filter: blur(10px);
+}
+
+.bokeh {
+  position: absolute;
+  border-radius: 50%;
+  opacity: 0.32;
+  filter: blur(22px);
+  transform: translate(-50%, -50%);
+  animation: twinkle 6s ease-in-out infinite alternate;
+}
+
+@keyframes twinkle {
+  from {
+    opacity: 0.12;
+    transform: translate(-50%, -50%) scale(0.85);
+  }
+  to {
+    opacity: 0.45;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+}
+
+.slot-row {
+  position: absolute;
+  left: 0;
+  bottom: 0;
+  width: 100%;
+  height: 26vh;
+  min-height: 140px;
+  opacity: 0.85;
+  filter: drop-shadow(0 -6px 18px rgba(255, 79, 163, 0.25));
+}
+
+.vignette {
+  position: absolute;
+  inset: 0;
+  background: radial-gradient(ellipse at center, transparent 35%, rgba(5, 0, 10, 0.6) 100%);
+}
+
+/* Machine above the scene, with chasing marquee bulbs inside its border */
+#root {
+  position: relative;
+  z-index: 1;
+}
+
+.machine {
+  z-index: 1;
+}
+
+.machine::before {
+  content: '';
+  position: absolute;
+  inset: 6px;
+  border-radius: 17px;
+  border: 4px dotted #ffe58a;
+  pointer-events: none;
+  filter: drop-shadow(0 0 4px rgba(255, 229, 138, 0.9));
+  animation: marquee 0.8s steps(2) infinite;
+}
+
+@keyframes marquee {
+  50% {
+    border-color: #ff4fa3;
+    filter: drop-shadow(0 0 6px rgba(255, 79, 163, 0.9));
+  }
+}
+
+/* Win celebration: gold coins */
+.coin-shower {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  overflow: hidden;
+  pointer-events: none;
+}
+
+.coin {
+  position: absolute;
+  top: -8vh;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  font: 900 12px Georgia, serif;
+  color: #7a5208;
+  background: radial-gradient(circle at 35% 30%, #fff6c2, #ffd54a 45%, #c9971c);
+  border: 2px solid #a8740e;
+  box-shadow:
+    inset 0 0 0 3px rgba(255, 246, 194, 0.55),
+    0 4px 10px rgba(0, 0, 0, 0.4);
+  animation: coin-fall 2.4s cubic-bezier(0.3, 0, 0.7, 1) both;
+}
+
+@keyframes coin-fall {
+  0% {
+    transform: translateY(0) rotateY(0deg);
+    opacity: 1;
+  }
+  85% {
+    opacity: 1;
+  }
+  100% {
+    transform: translateY(118vh) rotateY(900deg);
+    opacity: 0;
+  }
+}
+
+.big-win {
+  position: absolute;
+  left: 50%;
+  top: 40%;
+  transform: translate(-50%, -50%);
+  font-size: clamp(40px, 9vw, 110px);
+  font-weight: 900;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+  color: #ffd54a;
+  text-shadow:
+    0 4px 0 #a8740e,
+    0 0 30px rgba(255, 213, 74, 0.9),
+    0 0 60px rgba(255, 79, 163, 0.6);
+  animation: big-win 3.4s ease-out both;
+}
+
+@keyframes big-win {
+  0% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.4);
+  }
+  15% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1.1);
+  }
+  80% {
+    opacity: 1;
+    transform: translate(-50%, -50%) scale(1);
+  }
+  100% {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(1.05);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .bokeh,
+  .machine::before,
+  .coin,
+  .big-win {
+    animation: none;
+  }
+}
