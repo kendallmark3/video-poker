@@ -26,6 +26,19 @@ npm run build    # production build in dist/
 | `Space` / `Enter` | Deal, Draw, or Start Over |
 | `B` | Bet One |
 | `M` | Bet Max (deals) |
+| `D` / `C` | Double Up / Collect (after a win) |
+| `1`–`4` | Pick a card during Double Up |
+
+### Double Up
+
+After any win you can **Double Up** or **Collect**.
+
+1. **Start:** Double Up takes the win out of your credits as the stake, then shows the dealer's card and four face-down cards.
+2. **Pick:** choose one of the four. Aces are high.
+   - **Higher:** the stake is doubled and paid.
+   - **Equal:** the stake is returned (push).
+   - **Lower:** the stake is lost.
+3. **Keep going or stop:** after a win or a push you can double again, collect, or just deal the next hand. Collecting or dealing keeps what you've won.
 
 ## Rules (9/6 Jacks or Better)
 

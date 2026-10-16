@@ -454,3 +454,47 @@ kbd {
     animation: none;
   }
 }
+
+/* Double Up */
+.card.back.pickable {
+  cursor: pointer;
+  animation: deal-in 0.28s ease-out both;
+  transition:
+    transform 0.15s ease,
+    box-shadow 0.15s ease;
+}
+
+.card.back.pickable:not(:disabled):hover {
+  transform: translateY(-6px);
+  box-shadow:
+    0 0 0 3px var(--gold),
+    0 0 22px rgba(255, 213, 74, 0.75);
+}
+
+.card.back.pickable:disabled {
+  cursor: default;
+}
+
+.held-badge.dealer {
+  background: #7fd3ff;
+  box-shadow: 0 0 12px rgba(127, 211, 255, 0.7);
+}
+
+.key-hint.hidden {
+  visibility: hidden;
+}
+
+.btn.double {
+  color: #062a14;
+  background: linear-gradient(180deg, #9dffc4, #3fe08a 55%, #1f9c58);
+  border-color: #0c5a30;
+  box-shadow:
+    0 4px 0 #0c5a30,
+    0 6px 14px rgba(0, 0, 0, 0.45);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .card.back.pickable {
+    animation: none;
+  }
+}

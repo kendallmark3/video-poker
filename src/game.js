@@ -15,6 +15,7 @@ export function newGame() {
     hand: [],
     held: [false, false, false, false, false],
     result: null, // { key, name, win } after a draw
+    double: null, // { stake, dealer, choices, pick, outcome } during and after Double Up
   }
 }
 
@@ -36,6 +37,7 @@ export function deal(state, rng = Math.random) {
     deck: deck.slice(5),
     held: [false, false, false, false, false],
     result: null,
+    double: null,
   }
 }
 
@@ -67,4 +69,45 @@ export function canStartOver(state) {
 
 export function startOver(state) {
   return canStartOver(state) ? newGame() : state
+}
+
+
+// Double Up: after a win, risk it on a high-card game against the dealer.
+// The win is already in the credits (see draw), so starting a double takes it back out as the stake.
+
+export function canDouble(state) {
+  return state.phase === 'ready' && state.result?.win > 0 && !state.result.collected
+}
+
+export function startDouble(state, rng = Math.random) {
+  if (!canDouble(state)) return state
+  const stake = state.result.win
+  const deck = shuffle(createDeck(), rng)
+  return {
+    ...state,
+    phase: 'double',
+    credits: state.credits - stake,
+    double: { stake, dealer: deck[0], choices: deck.slice(1, 5), pick: null, outcome: null },
+  }
+}
+
+export function pickDouble(state, index) {
+  const d = state.double
+  if (state.phase !== 'double' || !d || d.pick !== null || !d.choices[index]) return state
+  const mine = d.choices[index].rank
+  const outcome = mine > d.dealer.rank ? 'win' : mine === d.dealer.rank ? 'push' : 'lose'
+  const win = { win: d.stake * 2, push: d.stake, lose: 0 }[outcome]
+  const name = { win: 'Double Up won', push: 'Double Up push', lose: 'Double Up lost' }[outcome]
+  return {
+    ...state,
+    phase: 'ready',
+    credits: state.credits + win,
+    result: { key: null, name, win, double: outcome },
+    double: { ...d, pick: index, outcome },
+  }
+}
+
+export function collect(state) {
+  if (!canDouble(state)) return state
+  return { ...state, result: { ...state.result, collected: true }, double: null }
 }

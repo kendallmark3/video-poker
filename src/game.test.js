@@ -80,3 +80,119 @@ describe('only valid actions', () => {
     expect(deal(broke, rng)).toBe(broke)
   })
 })
+
+import { canDouble, startDouble, pickDouble, collect } from './game.js'
+
+const card = (rank, suit = 'S') => ({ rank, suit })
+const afterWin = (win = 10, credits = 105) => ({
+  ...newGame(),
+  credits,
+  bet: 5,
+  result: { key: 'twoPair', name: 'Two Pair', win },
+})
+const inDouble = (dealerRank, choiceRanks, stake = 10, credits = 95) => ({
+  ...afterWin(stake, credits),
+  phase: 'double',
+  double: { stake, dealer: card(dealerRank, 'H'), choices: choiceRanks.map((r) => card(r, 'C')), pick: null, outcome: null },
+})
+
+describe('double up: when it is offered', () => {
+  it('is offered after a win only', () => {
+    expect(canDouble(afterWin())).toBe(true)
+    expect(canDouble({ ...afterWin(), result: { key: null, name: null, win: 0 } })).toBe(false)
+    expect(canDouble(newGame())).toBe(false)
+  })
+
+  it('is not offered during a hand', () => {
+    const holding = deal(newGame(), rng)
+    expect(canDouble(holding)).toBe(false)
+    expect(startDouble(holding, rng)).toBe(holding)
+  })
+
+  it('does nothing when not offered', () => {
+    const s = newGame()
+    expect(startDouble(s, rng)).toBe(s)
+    expect(collect(s)).toBe(s)
+    expect(pickDouble(s, 0)).toBe(s)
+  })
+})
+
+describe('double up: stake and payouts', () => {
+  it('takes the stake out of the credits and deals a dealer card plus four choices', () => {
+    const s = startDouble(afterWin(10, 105), rng)
+    expect(s.phase).toBe('double')
+    expect(s.credits).toBe(95)
+    expect(s.double.stake).toBe(10)
+    expect(s.double.choices).toHaveLength(4)
+    const ids = [s.double.dealer, ...s.double.choices].map(id)
+    expect(new Set(ids).size).toBe(5)
+  })
+
+  it('pays double on a higher card', () => {
+    const s = pickDouble(inDouble(9, [12, 2, 3, 4]), 0)
+    expect(s.double.outcome).toBe('win')
+    expect(s.result.win).toBe(20)
+    expect(s.credits).toBe(115)
+    expect(s.phase).toBe('ready')
+  })
+
+  it('returns the stake on a tie', () => {
+    const s = pickDouble(inDouble(9, [2, 9, 3, 4]), 1)
+    expect(s.double.outcome).toBe('push')
+    expect(s.result.win).toBe(10)
+    expect(s.credits).toBe(105)
+  })
+
+  it('loses the stake on a lower card', () => {
+    const s = pickDouble(inDouble(9, [2, 3, 4, 8]), 3)
+    expect(s.double.outcome).toBe('lose')
+    expect(s.result.win).toBe(0)
+    expect(s.credits).toBe(95)
+    expect(canDouble(s)).toBe(false)
+  })
+
+  it('treats aces as high', () => {
+    expect(pickDouble(inDouble(13, [14, 2, 3, 4]), 0).double.outcome).toBe('win')
+    expect(pickDouble(inDouble(14, [13, 2, 3, 4]), 0).double.outcome).toBe('lose')
+  })
+
+  it('ignores a second pick', () => {
+    const picked = { ...inDouble(9, [12, 2, 3, 4]), double: { ...inDouble(9, [12, 2, 3, 4]).double, pick: 0, outcome: 'win' } }
+    expect(pickDouble(picked, 1)).toBe(picked)
+  })
+})
+
+describe('double up: again and collect', () => {
+  it('can double again after a win, and after a push', () => {
+    const won = pickDouble(inDouble(9, [12, 2, 3, 4]), 0)
+    expect(canDouble(won)).toBe(true)
+    const again = startDouble(won, rng)
+    expect(again.double.stake).toBe(20)
+    expect(again.credits).toBe(won.credits - 20)
+    expect(canDouble(pickDouble(inDouble(9, [9, 2, 3, 4]), 0))).toBe(true)
+  })
+
+  it('collect keeps the amount and ends the offer', () => {
+    const won = pickDouble(inDouble(9, [12, 2, 3, 4]), 0)
+    const kept = collect(won)
+    expect(kept.credits).toBe(won.credits)
+    expect(canDouble(kept)).toBe(false)
+    expect(kept.double).toBeNull()
+  })
+
+  it('a new deal clears the double', () => {
+    const won = pickDouble(inDouble(9, [12, 2, 3, 4]), 0)
+    expect(deal(won, rng).double).toBeNull()
+  })
+})
+
+describe('double up: normal play is blocked', () => {
+  it('blocks deal, draw, hold, bet and start over during a double', () => {
+    const s = inDouble(9, [12, 2, 3, 4], 10, 0)
+    expect(deal(s, rng)).toBe(s)
+    expect(draw(s)).toBe(s)
+    expect(toggleHold(s, 0)).toBe(s)
+    expect(setBet(s, 3)).toBe(s)
+    expect(startOver(s)).toBe(s)
+  })
+})

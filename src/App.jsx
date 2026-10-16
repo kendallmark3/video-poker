@@ -1,6 +1,9 @@
 import { useEffect, useRef, useState } from 'react'
 import { PAYTABLE, payout } from './poker.js'
-import { newGame, setBet, deal, toggleHold, draw, startOver, canStartOver, MAX_BET } from './game.js'
+import {
+  newGame, setBet, deal, toggleHold, draw, startOver, canStartOver, MAX_BET,
+  canDouble, startDouble, pickDouble, collect,
+} from './game.js'
 import { SUIT_SYMBOL, rankLabel, cardName, isCourt, isRed, pipLayout } from './cards.js'
 
 const COURT_FIGURE = { 11: '♞', 12: '♛', 13: '♚' }
@@ -87,11 +90,21 @@ function CardCenter({ card }) {
   )
 }
 
-function Card({ card, held, canHold, onToggle, index, dealKey }) {
+function Card({ card, held, canHold, onToggle, index, dealKey, faceDown, topLabel, hint = index + 1 }) {
+  const badge = topLabel ?? (card && held ? 'HELD' : null)
   return (
     <div className="slot">
-      <div className={`held-badge ${card && held ? '' : 'hidden'}`}>HELD</div>
-      {card ? (
+      <div className={`held-badge ${badge ? '' : 'hidden'} ${topLabel === 'DEALER' ? 'dealer' : ''}`}>{badge ?? 'HELD'}</div>
+      {faceDown ? (
+        <button
+          key={dealKey}
+          className="card back pickable"
+          style={{ animationDelay: `${index * 70}ms` }}
+          onClick={onToggle}
+          disabled={!canHold}
+          aria-label={`Face-down card ${hint}`}
+        />
+      ) : card ? (
         <button
           key={dealKey}
           className={`card face ${isRed(card.suit) ? 'red' : 'black'} ${held ? 'held' : ''}`}
@@ -116,18 +129,25 @@ function Card({ card, held, canHold, onToggle, index, dealKey }) {
       ) : (
         <div className="card back" aria-hidden="true" />
       )}
-      <kbd className="key-hint">{index + 1}</kbd>
+      <kbd className={`key-hint ${hint ? '' : 'hidden'}`}>{hint ?? '·'}</kbd>
     </div>
   )
 }
 
 function Message({ game }) {
+  if (game.phase === 'double') return <span>Pick a card higher than the dealer — 1 to 4</span>
+  if (game.result?.double === 'win')
+    return <span className="win">Double Up won — win {game.result.win}</span>
+  if (game.result?.double === 'push')
+    return <span className="win">Push — {game.result.win} kept</span>
+  if (game.result?.double === 'lose') return <span className="lose">Double Up lost</span>
   if (canStartOver(game)) return <span className="lose">Out of credits</span>
   if (game.phase === 'holding') return <span>Click cards to hold, then Draw</span>
   if (game.result?.win > 0)
     return (
       <span className="win">
         {game.result.name} — win {game.result.win}
+        {canDouble(game) ? ' · Double Up?' : ''}
       </span>
     )
   if (game.result) return <span className="lose">No win — deal again</span>
@@ -148,6 +168,7 @@ export default function App() {
   const actions = {
     dealDraw() {
       const g = gameRef.current
+      if (g.phase === 'double') return
       if (g.phase === 'holding') setGame((s) => draw(s))
       else if (canStartOver(g)) setGame((s) => startOver(s))
       else {
@@ -168,6 +189,15 @@ export default function App() {
     hold(i) {
       setGame((s) => toggleHold(s, i))
     },
+    double() {
+      setGame((s) => startDouble(s))
+    },
+    collect() {
+      setGame((s) => collect(s))
+    },
+    pick(i) {
+      setGame((s) => pickDouble(s, i))
+    },
   }
   const actionsRef = useRef(actions)
   actionsRef.current = actions
@@ -177,7 +207,11 @@ export default function App() {
       if (e.repeat || e.metaKey || e.ctrlKey || e.altKey) return
       const a = actionsRef.current
       const key = e.key.toLowerCase()
-      if (key >= '1' && key <= '5') a.hold(Number(key) - 1)
+      const inDouble = gameRef.current.phase === 'double'
+      if (inDouble && key >= '1' && key <= '4') a.pick(Number(key) - 1)
+      else if (!inDouble && key >= '1' && key <= '5') a.hold(Number(key) - 1)
+      else if (key === 'd') a.double()
+      else if (key === 'c') a.collect()
       else if (key === ' ' || key === 'enter') a.dealDraw()
       else if (key === 'b') a.betOne()
       else if (key === 'm') a.betMax()
@@ -188,7 +222,9 @@ export default function App() {
     return () => window.removeEventListener('keydown', onKey)
   }, [])
 
-  const win = useCountUp(game.result?.win ?? 0)
+  const inDouble = game.phase === 'double'
+  const offerDouble = canDouble(game)
+  const win = useCountUp(inDouble ? game.double.stake : game.result?.win ?? 0)
   const credits = useCountUp(game.credits)
 
   return (
@@ -200,8 +236,32 @@ export default function App() {
         <Message game={game} />
       </div>
 
-      <section className="hand" aria-label="Your hand">
-        {[0, 1, 2, 3, 4].map((i) => (
+      <section className="hand" aria-label={game.double ? 'Double Up' : 'Your hand'}>
+        {game.double ? (
+          <>
+            <Card
+              index={0}
+              card={game.double.dealer}
+              topLabel="DEALER"
+              hint={null}
+              canHold={false}
+              dealKey={`dbl-${game.double.stake}-${game.double.dealer.rank}${game.double.dealer.suit}`}
+            />
+            {game.double.choices.map((c, i) => (
+              <Card
+                key={i}
+                index={i + 1}
+                card={c}
+                faceDown={game.double.pick === null}
+                topLabel={game.double.pick === i ? 'YOUR PICK' : null}
+                hint={inDouble ? i + 1 : null}
+                canHold={inDouble}
+                onToggle={() => actions.pick(i)}
+                dealKey={`dbl-${game.double.stake}-${c.rank}${c.suit}-${game.double.pick === null}`}
+              />
+            ))}
+          </>
+        ) : [0, 1, 2, 3, 4].map((i) => (
           <Card
             key={i}
             index={i}
@@ -216,7 +276,7 @@ export default function App() {
 
       <section className="meters">
         <div className="meter">
-          <span>Win</span>
+          <span>{inDouble ? 'At risk' : 'Win'}</span>
           <strong data-testid="win">{win}</strong>
         </div>
         <div className="meter">
@@ -236,13 +296,26 @@ export default function App() {
           </button>
         ) : (
           <>
-            <button className="btn" onClick={actions.betOne} disabled={holding}>
-              Bet One <kbd>B</kbd>
-            </button>
-            <button className="btn" onClick={actions.betMax} disabled={holding}>
-              Bet Max <kbd>M</kbd>
-            </button>
-            <button className="btn primary" onClick={actions.dealDraw}>
+            {offerDouble ? (
+              <>
+                <button className="btn double" onClick={actions.double}>
+                  Double Up <kbd>D</kbd>
+                </button>
+                <button className="btn" onClick={actions.collect}>
+                  Collect <kbd>C</kbd>
+                </button>
+              </>
+            ) : (
+              <>
+                <button className="btn" onClick={actions.betOne} disabled={holding || inDouble}>
+                  Bet One <kbd>B</kbd>
+                </button>
+                <button className="btn" onClick={actions.betMax} disabled={holding || inDouble}>
+                  Bet Max <kbd>M</kbd>
+                </button>
+              </>
+            )}
+            <button className="btn primary" onClick={actions.dealDraw} disabled={inDouble}>
               {holding ? 'Draw' : 'Deal'} <kbd>Space</kbd>
             </button>
           </>
