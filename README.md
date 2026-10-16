@@ -1,4 +1,6 @@
-# Carl's Poker Game
+# Carla's Video Poker Game
+
+*Developed by Mark Kendall.*
 
 A Jacks or Better video poker machine for the browser built with React, driven by the intent files in [intents/](intents/).
 

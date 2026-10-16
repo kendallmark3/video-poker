@@ -149,7 +149,7 @@ function Card({ card, held, canHold, onToggle, index, dealKey, faceDown, topLabe
 
 function Logo() {
   return (
-    <svg className="logo" viewBox="0 0 100 100" role="img" aria-label="Carl's Poker Game logo">
+    <svg className="logo" viewBox="0 0 100 100" role="img" aria-label="Carla's Video Poker Game logo">
       <circle cx="50" cy="50" r="48" fill="#c8102e" />
       <circle cx="50" cy="50" r="41" fill="none" stroke="#fff" strokeWidth="9" strokeDasharray="13 9.4" />
       <circle cx="50" cy="50" r="34" fill="#ffd54a" stroke="#7a5208" strokeWidth="2" />
@@ -336,7 +336,7 @@ export default function App() {
         <div className="brand">
           <Logo />
           <div>
-            <h1 className="title">Carl's Poker Game</h1>
+            <h1 className="title">Carla's Video Poker Game</h1>
             <p className="subtitle">Jacks or Better</p>
           </div>
         </div>
@@ -450,6 +450,8 @@ export default function App() {
         <Stats stats={game.stats} onReset={actions.resetSession} />
       </div>
       </div>
+
+      <p className="credit">Developed by Mark Kendall</p>
     </main>
     </>
   )
